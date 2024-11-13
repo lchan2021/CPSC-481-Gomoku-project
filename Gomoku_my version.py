@@ -1,6 +1,7 @@
 import curses
 import time  # Import time module for delay
 import sys
+import random
 
 if sys.platform == "win32":
     import windows_curses  # Enables curses support on Windows
@@ -24,7 +25,7 @@ def print_banner():
 \    \_\  (  <_> )  Y Y  (  <_> )    <|  |  /
  \______  /\____/|__|_|  /\____/|__|_ \____/ 
         \/             \/            \/      
-                                Version: 0.01
+                                Version: 0.04
 
 Author: 
 Leung Wang Chan(lchan2021@csu.fullerton.edu)
@@ -37,7 +38,7 @@ Kyle Ho        (kyleho@csu.fullerton.edu)
 
 def print_board(stdscr):
     stdscr.clear()
-    stdscr.addstr(0, 0, "Gomoku V0.01")
+    stdscr.addstr(0, 0, "Gomoku V0.04")
     stdscr.addstr(2, 0, "Use arrow keys to move. Press 'w' to place White, 'b' to place Black. 'q' to quit.")
     
     # Draw the board with cursor
@@ -56,7 +57,6 @@ def print_board(stdscr):
 
 def check_winner():
     # Check all rows, columns, and diagonals for a five-in-a-row sequence
-    # Check all rows, columns, and diagonals for a five-in-a-row sequence.
     # directions defines movements: (1, 0) -> right, (0, 1) -> down,
     # (1, 1) -> diagonal down-right, (1, -1) -> diagonal up-right.
     directions = [(1, 0), (0, 1), (1, 1), (1, -1)]
@@ -84,7 +84,87 @@ def check_winner():
     # If no winner found after checking all cells, return None
     return None
 
-def main(stdscr):
+
+# Evaluation function for AI
+def evaluate_board(board, player):
+    opponent = WHITE_PIECE if player == BLACK_PIECE else BLACK_PIECE
+    score = 0
+    directions = [(1, 0), (0, 1), (1, 1), (1, -1)]
+
+    for y in range(BOARD_SIZE):
+        for x in range(BOARD_SIZE):
+            if board[y][x] == player:
+                score += 1
+            elif board[y][x] == opponent:
+                score -= 1
+
+    return score
+
+# Minimax function with depth limit
+def minimax(board, depth, is_maximizing, player):
+    winner = check_winner()
+    if winner == player:
+        return 100
+    elif winner is not None:
+        return -100
+
+    if depth == 0:
+        return evaluate_board(board, player)
+
+    best_score = -float('inf') if is_maximizing else float('inf')
+
+    for y in range(BOARD_SIZE):
+        for x in range(BOARD_SIZE):
+            if board[y][x] == EMPTY:
+                board[y][x] = player if is_maximizing else (WHITE_PIECE if player == BLACK_PIECE else BLACK_PIECE)
+                score = minimax(board, depth - 1, not is_maximizing, player)
+                board[y][x] = EMPTY
+
+                if is_maximizing:
+                    best_score = max(best_score, score)
+                else:
+                    best_score = min(best_score, score)
+
+    return best_score
+
+# AI move function
+def get_ai_move(board, player):
+    best_score = -float('inf')
+    best_move = None
+
+    for y in range(BOARD_SIZE):
+        for x in range(BOARD_SIZE):
+            if board[y][x] == EMPTY:
+                board[y][x] = player
+                score = minimax(board, 3, False, player)
+                board[y][x] = EMPTY
+
+                if score > best_score:
+                    best_score = score
+                    best_move = (x, y)
+
+    return best_move
+
+def show_menu():
+    print("\nChoose your game mode:")
+    print("1. Player vs Player (PVP)")
+    print("2. Play with AI")
+    print("Enter 'quit' to terminate the program.")
+
+    while True:
+        choice = input("\nEnter your choice (1/2) or 'quit': ").strip().lower()
+
+        if choice == '1':
+            return "pvp"
+        elif choice == '2':
+            return "ai"
+        elif choice == 'quit':
+            print("Exiting the program. Goodbye!")
+            exit(0)
+        else:
+            print("Invalid choice. Please enter '1', '2', or 'quit'.")
+
+def main(stdscr, game_mode):
     global cursor_x, cursor_y, turn # Use global variables to track cursor position and turn
 
     # Setup curses settings
@@ -97,6 +177,22 @@ def main(stdscr):
     print_board(stdscr)
 
     while True: # Main game loop
+
+        if game_mode == "ai" and turn == BLACK_PIECE:
+            ai_move = get_ai_move(board, BLACK_PIECE)
+            if ai_move:
+                x, y = ai_move
+                board[y][x] = BLACK_PIECE
+                if check_winner() == BLACK_PIECE:
+                    print_board(stdscr)
+                    stdscr.addstr(BOARD_SIZE + 6, 0, "Black (AI) wins!")
+                    stdscr.refresh()
+                    stdscr.getch()
+                    break
+                turn = WHITE_PIECE
+                print_board(stdscr)
+                continue
+
         key = stdscr.getch() # Wait for user input
 
         # Handle quit command
@@ -124,6 +220,7 @@ def main(stdscr):
                     stdscr.getch() # Wait for any key to be pressed before ending
                     break # Exit the loop to end the game
                 turn = BLACK_PIECE # Switch turn to black if no winner
+
         elif key == ord('b') and turn == BLACK_PIECE:
             if board[cursor_y][cursor_x] == EMPTY:
                 board[cursor_y][cursor_x] = BLACK_PIECE
@@ -141,5 +238,6 @@ def main(stdscr):
 # Run the banner and curses wrapper to initiate the main loop
 if __name__ == "__main__":
     print_banner()
-    time.sleep(2) # show banner for 2 seconds
-    curses.wrapper(main)
+    game_mode = show_menu()
+    print(f"Selected game mode: {'Player vs Player' if game_mode == 'pvp' else 'Play with AI'}")
+    curses.wrapper(main, game_mode)
