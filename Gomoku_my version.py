@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import curses
 import time  # Import time module for delay
 import sys
