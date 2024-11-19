@@ -17,6 +17,17 @@ board = [[EMPTY for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
 cursor_x, cursor_y = 7, 7 # start in the middle
 turn = WHITE_PIECE  # White player starts
 
+# Initialize AI variables, after version 0.06
+# pattern_dict = create_pattern_dict()
+# zobrist_table = init_zobrist()
+# rolling_hash = 0
+# transposition_table = {}
+
+# Zobrist Hashing
+ZOBRIST_TABLE = [[[random.getrandbits(64) for _ in range(2)] for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
+TRANS_TABLE = {}
+
+
 def print_banner():
     banner = r"""
   ________                       __          
@@ -29,8 +40,6 @@ def print_banner():
 
 Author: 
 Leung Wang Chan(lchan2021@csu.fullerton.edu)
-Tung Le        (giatung2002@csu.fullerton.edu)
-Kyle Ho        (kyleho@csu.fullerton.edu)
 
 """
     print(banner)
@@ -55,7 +64,7 @@ def print_board(stdscr):
     stdscr.addstr(BOARD_SIZE + 5, 0, f"Current turn: {'White' if turn == WHITE_PIECE else 'Black'}")
     stdscr.refresh()# Refresh the screen to show all updates
 
-def check_winner():
+def check_winner(board):
     # Check all rows, columns, and diagonals for a five-in-a-row sequence
     # directions defines movements: (1, 0) -> right, (0, 1) -> down,
     # (1, 1) -> diagonal down-right, (1, -1) -> diagonal up-right.
@@ -85,23 +94,44 @@ def check_winner():
     return None
 
 
-# Evaluation function for AI : Scores the current board state for a given player
-def evaluate_board(board, player):
-    # Determine the opponent's piece based on the current player
-    opponent = WHITE_PIECE if player == BLACK_PIECE else BLACK_PIECE
-    score = 0 # Initialize the score to 0
-    directions = [(1, 0), (0, 1), (1, 1), (1, -1)] # Define directions to check: right, down, diagonal down-right, and diagonal up-right
+# Pattern Scoring
+def create_pattern_dict():
+    pattern_dict = {}
+    x = -1
+    while x < 2:
+        y = -x
+        pattern_dict[(x, x, x, x, x)] = 1000000 * x
+        pattern_dict[(0, x, x, x, x, 0)] = 100000 * x
+        pattern_dict[(0, x, x, x, 0, x, 0)] = 100000 * x
+        pattern_dict[(0, x, 0, x, x, x, 0)] = 100000 * x
+        pattern_dict[(0, x, x, 0, x, x, 0)] = 100000 * x
+        pattern_dict[(0, x, x, x, x, y)] = 10000 * x
+        pattern_dict[(y, x, x, x, x, 0)] = 10000 * x
+        pattern_dict[(y, x, x, x, x, y)] = -10 * x
+        pattern_dict[(0, x, x, x, 0)] = 1000 * x
+        pattern_dict[(0, x, 0, x, x, 0)] = 1000 * x
+        pattern_dict[(0, x, x, 0, x, 0)] = 1000 * x
+        pattern_dict[(0, 0, x, x, 0)] = 100 * x
+        x += 2
+    return pattern_dict
 
-    for y in range(BOARD_SIZE): # Iterate through each cell on the board
-        for x in range(BOARD_SIZE): 
+PATTERN_DICT = create_pattern_dict()
+
+# Evaluation Function
+def evaluate_board(board, player):
+    opponent = WHITE_PIECE if player == BLACK_PIECE else BLACK_PIECE
+    score = 0
+    directions = [(1, 0), (0, 1), (1, 1), (1, -1)]
+
+    for y in range(BOARD_SIZE):
+        for x in range(BOARD_SIZE):
             if board[y][x] == EMPTY:
                 continue
-
 
             current_piece = board[y][x]
             for dx, dy in directions:
                 count = 0
-                for i in range(5):  # Check up to 5 in a row
+                for i in range(5):
                     nx, ny = x + i * dx, y + i * dy
                     if 0 <= nx < BOARD_SIZE and 0 <= ny < BOARD_SIZE:
                         if board[ny][nx] == current_piece:
@@ -109,7 +139,6 @@ def evaluate_board(board, player):
                         else:
                             break
 
-                # Scoring based on the number of consecutive pieces
                 if count == 2:
                     score += 10 if current_piece == player else -10
                 elif count == 3:
@@ -118,101 +147,68 @@ def evaluate_board(board, player):
                     score += 100 if current_piece == player else -100
                 elif count == 5:
                     return 1000 if current_piece == player else -1000
+    return score
 
-    return score  # Return the final calculated score
-
-# Minimax function with depth limit : Evaluates the best score for a given move
-def minimax(board, depth, is_maximizing, player, alpha, beta, start_time, time_limit=30):
-    #print(f"Minimax called with depth={depth}, is_maximizing={is_maximizing}")
-
-     # Check if the time limit has been exceeded
+# Minimax with Alpha-Beta Pruning and Time Limit
+def minimax(board, depth, is_maximizing, player, alpha, beta, start_time, time_limit, last_player_move):
     if time.time() - start_time > time_limit:
-        return 0  # Return a neutral score if the time limit is exceeded
+        return 0  # Time exceeded
 
-    winner = check_winner()  # Check if the game has a winner
+    winner = check_winner(board)
     if winner == player:
-        return 1000 # Return a high score if the AI player wins
+        return 1000
     elif winner is not None:
-        return -1000 # Return a low score if the opponent wins
+        return -1000
 
-    if depth == 0: # Base case: If the depth limit is reached, evaluate the current board state
+    if depth == 0:
         return evaluate_board(board, player)
 
-    best_score = -float('inf') if is_maximizing else float('inf')   # Initialize the best score based on whether we are maximizing or minimizing
-    move_found = False  # Track if any valid move is found
+    lx, ly = last_player_move
+    search_radius = 2
+    best_score = -float('inf') if is_maximizing else float('inf')
 
-    for y in range(BOARD_SIZE):
-        for x in range(BOARD_SIZE): # Check if the current cell is empty (valid move)
-            if board[y][x] == EMPTY: # Simulate the move by placing the current player's piece
+    for y in range(max(0, ly - search_radius), min(BOARD_SIZE, ly + search_radius + 1)):
+        for x in range(max(0, lx - search_radius), min(BOARD_SIZE, lx + search_radius + 1)):
+            if board[y][x] == EMPTY:
                 board[y][x] = player if is_maximizing else (WHITE_PIECE if player == BLACK_PIECE else BLACK_PIECE)
-                score = minimax(board, depth - 1, not is_maximizing, player, alpha, beta, start_time, time_limit) # Recursively call minimax for the next depth with the opposite player
-                board[y][x] = EMPTY # Undo the move (restore the board state)
-                # Update the best score based on whether we are maximizing or minimizing
+                score = minimax(board, depth - 1, not is_maximizing, player, alpha, beta, start_time, time_limit, (x, y))
+                board[y][x] = EMPTY
+
                 if is_maximizing:
-                    best_score = max(best_score, score) # Choose the highest score for the maximizing player
+                    best_score = max(best_score, score)
                     alpha = max(alpha, best_score)
                 else:
-                    best_score = min(best_score, score) # Choose the lowest score for the minimizing player
+                    best_score = min(best_score, score)
                     beta = min(beta, best_score)
 
-                # Alpha-Beta Pruning
                 if beta <= alpha:
                     break
 
-
     return best_score
 
-# AI move function: Determines the best move for the AI player
-def get_ai_move(board, player,last_player_move):
-    best_score = -float('inf') # Initialize the best score as negative infinity (lowest possible score)
-    best_move = None # Initialize the best move as None (no move chosen yet)
+# AI Move Function
+def get_ai_move(board, player, last_player_move, time_limit=10):
+    best_score = -float('inf')
+    best_move = None
     start_time = time.time()
-    search_radius = 2  # Define the search radius around the last move
-
-    def is_within_radius(x, y, lx, ly, radius):
-        # Check if (x, y) is within the search radius from (lx, ly)
-        return abs(x - lx) <= radius and abs(y - ly) <= radius
-
-    # Get the coordinates of the last player move
     lx, ly = last_player_move
+    search_radius = 2
 
-    # Prioritize moves near the last player move (White)
     for y in range(max(0, ly - search_radius), min(BOARD_SIZE, ly + search_radius + 1)):
         for x in range(max(0, lx - search_radius), min(BOARD_SIZE, lx + search_radius + 1)):
-            if board[y][x] == EMPTY: # Check if the current cell is empty (a valid move)
-                board[y][x] = player # Temporarily place the AI player's piece on the board at (x, y)
-                score = minimax(board, 3, False, player, -float('inf'), float('inf'), start_time, 60)
-                # Call the minimax function to evaluate the move's score
-                # Depth is set to 3, meaning the algorithm looks ahead 3 moves
-                # The 'False' argument indicates it is now the minimizing player's turn
-                board[y][x] = EMPTY # Remove the piece after evaluation (restore the board state)
+            if board[y][x] == EMPTY:
+                board[y][x] = player
+                score = minimax(board, 3, False, player, -float('inf'), float('inf'), start_time, time_limit, (x, y))
+                board[y][x] = EMPTY
 
-                if score > best_score: # If the score of this move is better than the best score found so far
-                    best_score = score  # Update the best score to the current move's score
-                    best_move = (x, y) # Update the best move to the current coordinates (x, y)
+                if score > best_score:
+                    best_score = score
+                    best_move = (x, y)
 
-                # Check if the time limit has been exceeded
-                if time.time() - start_time > 60:
+                if time.time() - start_time > time_limit:
                     return best_move
 
-     # If no valid moves found within the radius, search the entire board
-    if best_move is None:
-        for y in range(BOARD_SIZE):
-            for x in range(BOARD_SIZE):
-                if board[y][x] == EMPTY:
-                    board[y][x] = player
-                    score = minimax(board, 3, False, player, -float('inf'), float('inf'), start_time, 60)
-                    board[y][x] = EMPTY
-
-                    if score > best_score:
-                        best_score = score
-                        best_move = (x, y)
-
-                    if time.time() - start_time > 60:
-                        return best_move
-
     return best_move
-
 
 def show_menu():
     print("\nChoose your game mode:")
@@ -245,6 +241,9 @@ def main(stdscr, game_mode):
     # Display initial board and instructions
     print_board(stdscr)
 
+    last_player_move = (7, 7)  # Initialize `last_player_move` in the center of the board
+
+
     while True: # Main game loop
 
         if game_mode == "ai" and turn == BLACK_PIECE: # Check if the current game mode is AI and if it's the Black player's turn
@@ -252,7 +251,8 @@ def main(stdscr, game_mode):
             if ai_move: # If the AI returned a valid move (not None)
                 x, y = ai_move # Unpack the move coordinates (x, y) from the AI's choice
                 board[y][x] = BLACK_PIECE # Place the Black piece (AI move) on the board at the chosen coordinates
-                if check_winner() == BLACK_PIECE: # Check if the AI's move resulted in a win for the Black player
+                last_player_move = (x, y)  # Update `last_player_move`
+                if check_winner(board) == BLACK_PIECE: # Check if the AI's move resulted in a win for the Black player
                     print_board(stdscr) # Print the updated board to the screen
                     stdscr.addstr(BOARD_SIZE + 6, 0, "Black (AI) wins!") # Display a message indicating that the Black player (AI) has won
                     stdscr.refresh() # Refresh the screen to show the win message
@@ -286,7 +286,7 @@ def main(stdscr, game_mode):
             if board[cursor_y][cursor_x] == EMPTY: # Check if the selected cell is empty
                 board[cursor_y][cursor_x] = WHITE_PIECE # Place the white piece
                 last_player_move = (cursor_x, cursor_y)  # Update last player move
-                if check_winner() == WHITE_PIECE: # Check if placing this piece wins the game
+                if check_winner(board) == WHITE_PIECE: # Check if placing this piece wins the game
                     print_board(stdscr) # Update the board display
                     stdscr.addstr(BOARD_SIZE + 6, 0, "White wins!") # Display win message
                     stdscr.refresh()  # Refresh display to show changes
@@ -298,7 +298,7 @@ def main(stdscr, game_mode):
         if key == ord('b') and turn == BLACK_PIECE:
             if board[cursor_y][cursor_x] == EMPTY:
                 board[cursor_y][cursor_x] = BLACK_PIECE
-                if check_winner() == BLACK_PIECE:
+                if check_winner(board) == BLACK_PIECE:
                     print_board(stdscr)
                     stdscr.addstr(BOARD_SIZE + 6, 0, "Black wins!")
                     stdscr.refresh()
