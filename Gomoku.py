@@ -27,7 +27,9 @@ BOARD_SIZE = 15
 WHITE_PIECE = 'W'
 BLACK_PIECE = 'B'
 EMPTY = '.'
-DIRECTIONS = [(1, 0), (0, 1), (1, 1), (1, -1)] # Directions: right, down, diagonal down-right, diagonal up-right
+
+# Define directions for later checking: right, down, diagonal down-right, diagonal up-right
+DIRECTIONS = [(1, 0), (0, 1), (1, 1), (1, -1)]
 
 # Initialize an empty game board
 board = [[EMPTY for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
