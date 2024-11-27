@@ -41,8 +41,9 @@ def print_banner():
         \/             \/            \/
                                 Version: 0.11
 
-Author:
+Authors:
 Leung Wang Chan(lchan2021@csu.fullerton.edu)
+Kyle Ho (kyleho@csu.fullerton.edu)
 
 """
     print(banner)
