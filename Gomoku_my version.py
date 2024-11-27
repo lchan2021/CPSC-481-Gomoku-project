@@ -85,7 +85,7 @@ Kyle Ho (kyleho@csu.fullerton.edu)
 """
     print(banner)
 
-def print_board(stdscr):
+def print_board(stdscr: curses.window):
     """
     Renders the game board on the screen using curses.
 
@@ -146,7 +146,7 @@ def print_board(stdscr):
 
     stdscr.refresh()  # Refresh the screen to show all updates
 
-def check_winner(board):
+def check_winner(board: list[list[str]]):
     """
     Checks the board for a winner by looking for five consecutive pieces.
 
@@ -174,7 +174,7 @@ def check_winner(board):
                     return board[y][x]  # Winner found
     return None  # No winner
 
-def evaluate_board(board, player):
+def evaluate_board(board: list[list[str]], player: str):
     """
     Evaluate the board and return a score based on the current player's advantage.
 
@@ -214,7 +214,7 @@ def evaluate_board(board, player):
     logging.debug(f'Evaluate Board Score for player {player}: {score}')  # Log the evaluation score
     return score
 
-def evaluate_move_position(board, x, y, player):
+def evaluate_move_position(board: list[list[str]], x: int, y: int, player: str):
     """
     Heuristic to evaluate the desirability of a move position.
     Positive scores indicate favorable positions for the player.
@@ -249,7 +249,8 @@ def evaluate_move_position(board, x, y, player):
         score += count
     return score
 
-def minimax(board, depth, is_maximizing, player, alpha, beta, start_time, time_limit, last_move):
+def minimax(board: list[list[str]], depth: int, is_maximizing: bool, player: str,
+            alpha: float, beta: float, start_time: float, time_limit: int, last_move: tuple):
     """
     Minimax algorithm with alpha-beta pruning and time constraint.
 
@@ -322,7 +323,7 @@ def minimax(board, depth, is_maximizing, player, alpha, beta, start_time, time_l
                 break  # Alpha cutoff
         return best_score
 
-def get_ai_move(board, player, last_move, time_limit=10):
+def get_ai_move(board: list[list[str]], player: str, last_move: tuple, time_limit=10):
     """
     Determines the best move for the AI player using the minimax algorithm with alpha-beta pruning.
 
@@ -401,7 +402,7 @@ def show_menu():
         else:
             print("Invalid choice. Please enter '1', '2', or 'quit'.")
 
-def main(stdscr, game_mode):
+def main(stdscr: curses.window, game_mode: str):
     """
     The main game loop handling user input, AI moves, and game state updates.
 
