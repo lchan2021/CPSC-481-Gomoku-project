@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
-import curses
 import time  # Import time module for delay
 import sys
 import random
 
 if sys.platform == "win32":
-    import windows_curses  # Enables curses support on Windows
+    # If on Windows, check if windows-curses is installed (if it works, we import `curses` rather than importing `windows-curses`)
+    try:
+        import curses
+    except ImportError:
+    # If on Windows and window-curses not installed, raise an exception and tell the user
+        print("On Windows, install the 'windows-curses' package.")
+        raise
+else:
+    import curses
 
 # Define board size and initial settings
 BOARD_SIZE = 15
@@ -26,15 +33,15 @@ TRANS_TABLE = {}
 
 def print_banner():
     banner = r"""
-  ________                       __          
- /  _____/  ____   _____   ____ |  | ____ __ 
+  ________                       __
+ /  _____/  ____   _____   ____ |  | ____ __
 /   \  ___ /  _ \ /     \ /  _ \|  |/ /  |  \
 \    \_\  (  <_> )  Y Y  (  <_> )    <|  |  /
- \______  /\____/|__|_|  /\____/|__|_ \____/ 
-        \/             \/            \/      
+ \______  /\____/|__|_|  /\____/|__|_ \____/
+        \/             \/            \/
                                 Version: 0.11
 
-Author: 
+Author:
 Leung Wang Chan(lchan2021@csu.fullerton.edu)
 
 """
@@ -45,7 +52,7 @@ def print_board(stdscr):
     stdscr.clear()
     stdscr.addstr(0, 0, "Gomoku V0.11")
     stdscr.addstr(2, 0, "Use arrow keys to move. Press 'w' to place White, 'b' to place Black. 'q' to quit.")
-    
+
     # Draw the board with cursor
     for y in range(BOARD_SIZE): # Loop over each row of the board
         for x in range(BOARD_SIZE): # Loop over each column in the current row
@@ -311,7 +318,7 @@ def main(stdscr, game_mode):
                     break # Exit the loop to end the game
                 turn = BLACK_PIECE # Switch turn to black if no winner
 
-        # PvP mode 
+        # PvP mode
         if key == ord('b') and turn == BLACK_PIECE:
             if board[cursor_y][cursor_x] == EMPTY:
                 board[cursor_y][cursor_x] = BLACK_PIECE
