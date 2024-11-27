@@ -22,7 +22,7 @@ EMPTY = '.'
 
 # Initialize an empty game board
 board = [[EMPTY for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
-cursor_x, cursor_y = 7, 7 # start in the middle
+cursor_x, cursor_y = BOARD_SIZE // 2, BOARD_SIZE // 2 # start in the middle
 turn = WHITE_PIECE  # White player starts
 
 
