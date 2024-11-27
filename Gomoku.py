@@ -27,6 +27,7 @@ BOARD_SIZE = 15
 WHITE_PIECE = 'W'
 BLACK_PIECE = 'B'
 EMPTY = '.'
+DIRECTIONS = [(1, 0), (0, 1), (1, 1), (1, -1)] # Directions: right, down, diagonal down-right, diagonal up-right
 
 # Initialize an empty game board
 board = [[EMPTY for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
@@ -156,13 +157,11 @@ def check_winner(board: list[list[str]]):
     Returns:
         The piece type of the winner ('W' or 'B') if a winner is found, else None.
     """
-    directions = [(1, 0), (0, 1), (1, 1), (1, -1)]  # Directions: right, down, diagonal down-right, diagonal up-right
-
     for y in range(BOARD_SIZE):
         for x in range(BOARD_SIZE):
             if board[y][x] == EMPTY:
                 continue  # Skip empty cells
-            for dx, dy in directions:
+            for dx, dy in DIRECTIONS:
                 count = 0  # Initialize count of consecutive pieces
                 for i in range(5):
                     nx, ny = x + i * dx, y + i * dy
@@ -194,7 +193,7 @@ def evaluate_board(board: list[list[str]], player: str):
     # Iterate through all cells and evaluate patterns
     for y in range(BOARD_SIZE):
         for x in range(BOARD_SIZE):
-            for dx, dy in [(1, 0), (0, 1), (1, 1), (1, -1)]:
+            for dx, dy in DIRECTIONS:
                 pattern = []
                 for i in range(5):  # Only patterns of length 5 are considered
                     nx, ny = x + i * dx, y + i * dy
@@ -230,10 +229,9 @@ def evaluate_move_position(board: list[list[str]], x: int, y: int, player: str):
         score (int): The evaluated score of the move position.
     """
     score = 0
-    directions = [(1, 0), (0, 1), (1, 1), (1, -1)]
     opponent = WHITE_PIECE if player == BLACK_PIECE else BLACK_PIECE
 
-    for dx, dy in directions:
+    for dx, dy in DIRECTIONS:
         count = 0
         for i in range(1, 3):  # Check two steps in each direction
             nx, ny = x + dx * i, y + dy * i
