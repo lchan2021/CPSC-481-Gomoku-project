@@ -3,6 +3,7 @@ import time  # Import time module for delay
 import sys
 import random
 import logging
+import math
 
 if sys.platform == "win32":
     # If on Windows, check if windows-curses is installed (if it works, we import `curses` rather than importing `windows-curses`)
@@ -52,16 +53,18 @@ def create_pattern_dict():
     pattern_dict = {}
     # Patterns for both players
     for player in [-1, 1]:  # -1 for opponent, 1 for AI
-        # Five in a row
-        pattern_dict[tuple([player]*5)] = 1000000 * player
-        # Open-ended four
-        pattern_dict[tuple([0, player]*4 + [0])] = 100000 * player
-        # Closed four
-        pattern_dict[tuple([player]*4 + [0])] = 10000 * player
+        # Five in a row (represents victory this turn)
+        pattern_dict[tuple([player]*5)] = math.inf * player
+        # Open-ended four (represents guaranteed victory next turn)
+        pattern_dict[tuple([0] + [player]*4 + [0])] = math.inf * player
+        # Closed four (current player must block it or is guaranteed to lose)
+        pattern_dict[tuple([-player] + [player]*4 + [0])] = 100000 * player
+        pattern_dict[tuple([0] + [player]*4 + [-player])] = 100000 * player
         # Open-ended three
-        pattern_dict[tuple([0, player]*3 + [0])] = 1000 * player
+        pattern_dict[tuple([0] + [player]*3 + [0])] = 1000 * player
         # Closed three
-        pattern_dict[tuple([player]*3 + [0])] = 100 * player
+        pattern_dict[tuple([-player] + [player]*3 + [0])] = 100 * player
+        pattern_dict[tuple([0] + [player]*3 + [-player])] = 100 * player
     return pattern_dict
 
 # Generate the global pattern dictionary
