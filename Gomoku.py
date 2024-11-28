@@ -32,6 +32,9 @@ EMPTY = '.'
 # Define directions for later checking: right, down, diagonal down-right, diagonal up-right
 DIRECTIONS = [(1, 0), (0, 1), (1, 1), (1, -1)]
 
+# Time limit for AI search in seconds
+TIME_LIMIT = 10
+
 # Initialize an empty game board
 board = [[EMPTY for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
 cursor_x, cursor_y = BOARD_SIZE // 2, BOARD_SIZE // 2 # start in the middle
@@ -253,7 +256,7 @@ def evaluate_move_position(board: list[list[str]], x: int, y: int, player: str):
     return score
 
 def minimax(board: list[list[str]], depth: int, is_maximizing: bool, player: str,
-            alpha: float, beta: float, start_time: float, time_limit: int, last_move: tuple):
+            alpha: float, beta: float, start_time: float, last_move: tuple):
     """
     Minimax algorithm with alpha-beta pruning and time constraint.
 
@@ -265,13 +268,12 @@ def minimax(board: list[list[str]], depth: int, is_maximizing: bool, player: str
         alpha (float): The alpha value for pruning.
         beta (float): The beta value for pruning.
         start_time (float): The start time of the search.
-        time_limit (int): The time limit for the search in seconds.
         last_move (tuple): The last move made (x, y).
 
     Returns:
         score (int): The evaluated score of the board.
     """
-    if time.time() - start_time > time_limit:
+    if time.time() - start_time > TIME_LIMIT:
         logging.debug("Time limit exceeded during minimax search.")
         return evaluate_board(board, player)
 
@@ -303,7 +305,7 @@ def minimax(board: list[list[str]], depth: int, is_maximizing: bool, player: str
         for move, _ in possible_moves:
             x, y = move
             board[y][x] = player  # Make the move
-            score = minimax(board, depth - 1, False, player, alpha, beta, start_time, time_limit, (x, y))
+            score = minimax(board, depth - 1, False, player, alpha, beta, start_time, (x, y))
             board[y][x] = EMPTY  # Undo the move
             best_score = max(best_score, score)
             alpha = max(alpha, best_score)
@@ -317,7 +319,7 @@ def minimax(board: list[list[str]], depth: int, is_maximizing: bool, player: str
         for move, _ in possible_moves:
             x, y = move
             board[y][x] = opponent  # Make the opponent's move
-            score = minimax(board, depth - 1, True, player, alpha, beta, start_time, time_limit, (x, y))
+            score = minimax(board, depth - 1, True, player, alpha, beta, start_time, (x, y))
             board[y][x] = EMPTY  # Undo the move
             best_score = min(best_score, score)
             beta = min(beta, best_score)
@@ -326,7 +328,7 @@ def minimax(board: list[list[str]], depth: int, is_maximizing: bool, player: str
                 break  # Alpha cutoff
         return best_score
 
-def get_ai_move(board: list[list[str]], player: str, last_move: tuple, time_limit=10):
+def get_ai_move(board: list[list[str]], player: str, last_move: tuple):
     """
     Determines the best move for the AI player using the minimax algorithm with alpha-beta pruning.
 
@@ -334,7 +336,6 @@ def get_ai_move(board: list[list[str]], player: str, last_move: tuple, time_limi
         board: The current game board.
         player (str): The AI player's piece type ('W' or 'B').
         last_move (tuple): The last move made (x, y).
-        time_limit (int): The time limit for the AI to decide on a move in seconds.
 
     Returns:
         best_move (tuple): The coordinates (x, y) of the best move.
@@ -360,14 +361,14 @@ def get_ai_move(board: list[list[str]], player: str, last_move: tuple, time_limi
     possible_moves.sort(key=lambda move: move[1], reverse=True)
 
     for move, _ in possible_moves:
-        if time.time() - start_time > time_limit:
+        if time.time() - start_time > TIME_LIMIT:
             logging.debug("Time limit exceeded before completing all move evaluations.")
             break
 
         x, y = move
         board[y][x] = player  # Make the move
         score = minimax(board, depth=4, is_maximizing=False, player=player, alpha=alpha, beta=beta,
-                       start_time=start_time, time_limit=time_limit, last_move=(x, y))
+                       start_time=start_time, last_move=(x, y))
         board[y][x] = EMPTY  # Undo the move
 
         logging.debug(f'AI evaluating move at ({x}, {y}) with score {score}')
@@ -428,7 +429,7 @@ def main(stdscr: curses.window, game_mode: str):
     while True:  # Main game loop
 
         if game_mode == "ai" and turn == BLACK_PIECE:  # AI's turn
-            ai_move = get_ai_move(board, BLACK_PIECE, last_player_move, time_limit=10)  # Get AI's move
+            ai_move = get_ai_move(board, BLACK_PIECE, last_player_move)  # Get AI's move
             if ai_move:  # If the AI returned a valid move
                 x, y = ai_move
                 board[y][x] = BLACK_PIECE  # Place the Black piece on the board
