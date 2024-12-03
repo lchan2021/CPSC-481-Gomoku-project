@@ -316,31 +316,31 @@ def minimax(board: list[list[str]], depth: int, is_maximizing: bool, player: str
     possible_moves.sort(key=lambda move: move[1], reverse=True)
 
     if is_maximizing:
-        best_score = -float('inf')
+        best_score = -math.inf
         for move, _ in possible_moves:
             x, y = move
             board[y][x] = player  # Make the move
             score = minimax(board, depth - 1, False, player, alpha, beta, start_time, (x, y))
             board[y][x] = EMPTY  # Undo the move
             best_score = max(best_score, score)
-            alpha = max(alpha, best_score)
-            if beta <= alpha:
+            if best_score >= beta:
                 logging.debug("Alpha-beta pruning activated in maximizing layer.")
                 break  # Beta cutoff
+            alpha = max(alpha, best_score)
         return best_score
     else:
         opponent = WHITE_PIECE if player == BLACK_PIECE else BLACK_PIECE
-        best_score = float('inf')
+        best_score = math.inf
         for move, _ in possible_moves:
             x, y = move
             board[y][x] = opponent  # Make the opponent's move
             score = minimax(board, depth - 1, True, player, alpha, beta, start_time, (x, y))
             board[y][x] = EMPTY  # Undo the move
             best_score = min(best_score, score)
-            beta = min(beta, best_score)
-            if beta <= alpha:
+            if best_score <= alpha:
                 logging.debug("Alpha-beta pruning activated in minimizing layer.")
                 break  # Alpha cutoff
+            beta = min(beta, best_score)
         return best_score
 
 def get_ai_move(board: list[list[str]], player: str, last_move: tuple):
@@ -356,14 +356,14 @@ def get_ai_move(board: list[list[str]], player: str, last_move: tuple):
         best_move (tuple): The coordinates (x, y) of the best move.
     """
     best_move = None
-    best_score = -float('inf')
+    best_score = -math.inf
     start_time = time.time()
-    alpha = -float('inf')
-    beta = float('inf')
+    alpha = -math.inf
+    beta = math.inf
     lx, ly = last_move
     search_radius = 2  # Define the search radius around the last move
 
-    possible_moves = []
+    possible_moves: list[tuple[tuple, int]] = []
 
     # Generate possible moves within the search radius
     for y in range(max(0, ly - search_radius), min(BOARD_SIZE, ly + search_radius + 1)):
