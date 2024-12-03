@@ -271,7 +271,7 @@ def evaluate_move_position(board: list[list[str]], x: int, y: int, player: str):
     return score
 
 def minimax(board: list[list[str]], depth: int, is_maximizing: bool, player: str,
-            alpha: float, beta: float, start_time: float, last_move: tuple):
+            alpha: float, beta: float, start_time: float, last_move: tuple[int, int]):
     """
     Minimax algorithm with alpha-beta pruning and time constraint.
 
@@ -327,7 +327,6 @@ def minimax(board: list[list[str]], depth: int, is_maximizing: bool, player: str
                 logging.debug("Alpha-beta pruning activated in maximizing layer.")
                 break  # Beta cutoff
             alpha = max(alpha, best_score)
-        return best_score
     else:
         opponent = WHITE_PIECE if player == BLACK_PIECE else BLACK_PIECE
         best_score = math.inf
@@ -341,7 +340,8 @@ def minimax(board: list[list[str]], depth: int, is_maximizing: bool, player: str
                 logging.debug("Alpha-beta pruning activated in minimizing layer.")
                 break  # Alpha cutoff
             beta = min(beta, best_score)
-        return best_score
+
+    return best_score
 
 def get_ai_move(board: list[list[str]], player: str, last_move: tuple):
     """
@@ -363,7 +363,7 @@ def get_ai_move(board: list[list[str]], player: str, last_move: tuple):
     lx, ly = last_move
     search_radius = 2  # Define the search radius around the last move
 
-    possible_moves: list[tuple[tuple, int]] = []
+    possible_moves: list[tuple[tuple[int, int], int]] = []
 
     # Generate possible moves within the search radius
     for y in range(max(0, ly - search_radius), min(BOARD_SIZE, ly + search_radius + 1)):
