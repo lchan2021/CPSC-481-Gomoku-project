@@ -55,20 +55,34 @@ def create_pattern_dict():
     """
     pattern_dict = {}
     # Patterns for both players
-    for player in [-1, 1]:  # -1 for opponent, 1 for AI
-        # Five in a row (represents victory this turn)
-        pattern_dict[tuple([player]*5)] = math.inf * player
-        # Open-ended four (represents guaranteed victory next turn)
-        pattern_dict[tuple([0] + [player]*4 + [0])] = math.inf * player
-        # Closed four (current player must block it or is guaranteed to lose)
-        pattern_dict[tuple([-player] + [player]*4 + [0])] = 100000 * player
-        pattern_dict[tuple([0] + [player]*4 + [-player])] = 100000 * player
-        # Open-ended three
-        pattern_dict[tuple([0] + [player]*3 + [0])] = 1000 * player
-        # Closed three
-        pattern_dict[tuple([-player] + [player]*3 + [0])] = 100 * player
-        pattern_dict[tuple([0] + [player]*3 + [-player])] = 100 * player
+    for x in [-1, 1]:  # -1 for opponent, 1 for AI
+        y = -x
+        # Five-in-a-row (Victory)
+        pattern_dict[(x, x, x, x, x)]       = math.inf * x
+        # Open-ended four-in-a-row
+        pattern_dict[(0, x, x, x, x, 0)]    = 100000 * x
+        # One-and-Three
+        pattern_dict[(0, x, 0, x, x, x, 0)] = 50000 * x
+        pattern_dict[(0, x, x, x, 0, x, 0)] = 50000 * x
+        # Two-and-Two
+        pattern_dict[(0, x, x, 0, x, x, 0)] = 25000 * x
+        # Half-closed four-in-a-row (blocked on one end)
+        pattern_dict[(0, x, x, x, x, y)]    = 10000 * x
+        pattern_dict[(y, x, x, x, x, 0)]    = 10000 * x
+        # Fully closed four-in-a-row (blocked on both ends)
+        pattern_dict[(y, x, x, x, x, y)]    = -1000 * x
+        # Open-ended three-in-a-row (potential to form four-in-a-row)
+        pattern_dict[(0, x, x, x, 0)]       = 1000 * x
+        pattern_dict[(y, x, x, x, 0)]       = 1000 * x
+        pattern_dict[(0, x, x, x, y)]       = 1000 * x
+        # One-and-Two
+        pattern_dict[(0, x, 0, x, x, 0)]    = 1000 * x
+        pattern_dict[(0, x, x, 0, x, 0)]    = 1000 * x
+        # Open-ended two-in-a-row (early game potential)
+        pattern_dict[(0, 0, x, x, 0)]       = 100 * x
     return pattern_dict
+
+
 
 # Generate the global pattern dictionary
 PATTERN_DICT = create_pattern_dict()
@@ -214,7 +228,8 @@ def evaluate_board(board: list[list[str]], player: str):
                         else:
                             pattern.append(0)
                     else:
-                        pattern.append(-99)  # Out of bounds
+                        pattern.append(-1)  # Out of bounds
+                        break
                 pattern_tuple = tuple(pattern)
                 if pattern_tuple in PATTERN_DICT:
                     score += PATTERN_DICT[pattern_tuple]
@@ -279,9 +294,9 @@ def minimax(board: list[list[str]], depth: int, is_maximizing: bool, player: str
 
     winner = check_winner(board)
     if winner == player:
-        return 100000  # AI wins
+        return math.inf  # AI wins
     elif winner is not None:
-        return -100000  # Opponent wins
+        return -math.inf  # Opponent wins
 
     if depth == 0:
         return evaluate_board(board, player)
@@ -450,6 +465,10 @@ def main(stdscr: curses.window, game_mode: str):
                 turn = WHITE_PIECE  # Switch turn to White
                 print_board(stdscr)
                 continue  # Continue to next iteration
+            else:
+                logging.debug(f'AI found no valid move.')
+                break
+
 
         try:
             key = stdscr.getch()  # Wait for user input
