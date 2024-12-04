@@ -108,6 +108,31 @@ Kyle Ho (kyleho@csu.fullerton.edu)
 """
     print(banner)
 
+def show_menu():
+    """
+    Displays the game mode selection menu to the user.
+
+    Returns:
+        game_mode (str): The selected game mode ('pvp' or 'ai').
+    """
+    print("\nChoose your game mode:")
+    print("1. Player vs Player (PVP)")
+    print("2. Play with AI")
+    print("Enter 'quit' to terminate the program.")
+
+    while True:
+        choice = input("\nEnter your choice (1/2) or 'quit': ").strip().lower()
+
+        if choice == '1':
+            return "pvp"
+        elif choice == '2':
+            return "ai"
+        elif choice == 'quit':
+            print("Exiting the program. Goodbye!")
+            exit(0)
+        else:
+            print("Invalid choice. Please enter '1', '2', or 'quit'.")
+
 def print_board(stdscr: curses.window):
     """
     Renders the game board on the screen using curses.
@@ -395,31 +420,6 @@ def get_ai_move(board: list[list[str]], player: str, last_move: tuple):
 
     logging.info(f'AI selected move: {best_move} with score {best_score}')
     return best_move
-
-def show_menu():
-    """
-    Displays the game mode selection menu to the user.
-
-    Returns:
-        game_mode (str): The selected game mode ('pvp' or 'ai').
-    """
-    print("\nChoose your game mode:")
-    print("1. Player vs Player (PVP)")
-    print("2. Play with AI")
-    print("Enter 'quit' to terminate the program.")
-
-    while True:
-        choice = input("\nEnter your choice (1/2) or 'quit': ").strip().lower()
-
-        if choice == '1':
-            return "pvp"
-        elif choice == '2':
-            return "ai"
-        elif choice == 'quit':
-            print("Exiting the program. Goodbye!")
-            exit(0)
-        else:
-            print("Invalid choice. Please enter '1', '2', or 'quit'.")
 
 def main(stdscr: curses.window, game_mode: str):
     """
