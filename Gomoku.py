@@ -29,8 +29,8 @@ WHITE_PIECE = 'W'
 BLACK_PIECE = 'B'
 EMPTY = '.'
 
-# Define directions for later checking: right, down, diagonal down-right, diagonal up-right
-DIRECTIONS = [(1, 0), (0, 1), (1, 1), (1, -1)]
+# Define directions for later checking: right, down, diagonal down-right, diagonal down-left
+DIRECTIONS = [(1, 0), (0, 1), (1, 1), (-1, 1)]
 
 # Time limit for AI search in seconds
 TIME_LIMIT = 10
