@@ -35,6 +35,9 @@ DIRECTIONS = [(1, 0), (0, 1), (1, 1), (-1, 1)]
 # Time limit for AI search in seconds
 TIME_LIMIT = 10
 
+# AI search radius
+SEARCH_RADIUS = 2
+
 # Initialize an empty game board
 board = [[EMPTY for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
 cursor_x, cursor_y = BOARD_SIZE // 2, BOARD_SIZE // 2 # start in the middle
@@ -337,12 +340,11 @@ def minimax(board: list[list[str]], depth: int, is_maximizing: bool, player: str
         return evaluate_board(board, player)
 
     lx, ly = last_move
-    search_radius = 2  # Define the search radius around the last move
     possible_moves = []
 
     # Generate possible moves within the search radius
-    for y in range(max(0, ly - search_radius), min(BOARD_SIZE, ly + search_radius + 1)):
-        for x in range(max(0, lx - search_radius), min(BOARD_SIZE, lx + search_radius + 1)):
+    for y in range(max(0, ly - SEARCH_RADIUS), min(BOARD_SIZE, ly + SEARCH_RADIUS + 1)):
+        for x in range(max(0, lx - SEARCH_RADIUS), min(BOARD_SIZE, lx + SEARCH_RADIUS + 1)):
             if board[y][x] == EMPTY:
                 move_score = evaluate_move_position(board, x, y, player)
                 possible_moves.append(((x, y), move_score))
@@ -396,13 +398,12 @@ def get_ai_move(board: list[list[str]], player: str, last_move: tuple):
     alpha = -math.inf
     beta = math.inf
     lx, ly = last_move
-    search_radius = 2  # Define the search radius around the last move
 
     possible_moves: list[tuple[tuple[int, int], int]] = []
 
     # Generate possible moves within the search radius
-    for y in range(max(0, ly - search_radius), min(BOARD_SIZE, ly + search_radius + 1)):
-        for x in range(max(0, lx - search_radius), min(BOARD_SIZE, lx + search_radius + 1)):
+    for y in range(max(0, ly - SEARCH_RADIUS), min(BOARD_SIZE, ly + SEARCH_RADIUS + 1)):
+        for x in range(max(0, lx - SEARCH_RADIUS), min(BOARD_SIZE, lx + SEARCH_RADIUS + 1)):
             if board[y][x] == EMPTY:
                 move_score = evaluate_move_position(board, x, y, player)
                 possible_moves.append(((x, y), move_score))
