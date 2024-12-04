@@ -50,6 +50,16 @@ def create_pattern_dict():
     Creates a dictionary of patterns for evaluating the board state in Gomoku.
     Patterns are scored based on their potential to create a winning sequence.
 
+    Scoring Details:
+        - Positive scores favor the AI (maximizing player).
+        - Negative scores penalize patterns favorable to the opponent (minimizing player).
+        - Higher scores are assigned to more advanced or threatening patterns.
+
+    Patterns:
+        - `1` represents the AI's pieces.
+        - `-1` represents the opponent's pieces.
+        - `0` represents empty spaces.
+
     Returns:
         pattern_dict (dict): A dictionary where keys are patterns (tuples) and values are their corresponding scores.
     """
