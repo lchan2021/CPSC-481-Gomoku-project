@@ -469,7 +469,7 @@ def get_ai_move(board: list[list[str]], player: str, last_move: tuple):
             break
 
         x, y = move
-        place_piece(x, y, 'B')
+        place_piece(x, y, BLACK_PIECE)
         if board_hash not in TRANS_TABLE:
             score = minimax(board, depth=4, is_maximizing=False, player=player, alpha=alpha, beta=beta,
                        start_time=start_time, last_move=(x, y))
@@ -514,7 +514,7 @@ def main(stdscr: curses.window, game_mode: str):
             ai_move = get_ai_move(board, BLACK_PIECE, last_player_move)  # Get AI's move
             if ai_move:  # If the AI returned a valid move
                 x, y = ai_move
-                board[y][x] = BLACK_PIECE  # Place the Black piece on the board
+                place_piece(x, y, BLACK_PIECE)
                 last_player_move = (x, y)  # Update last_player_move
                 winner = check_winner(board)
                 logging.debug(f'AI placed at ({x}, {y}). Current board state:')
@@ -562,7 +562,7 @@ def main(stdscr: curses.window, game_mode: str):
         # Place a White piece if it's White's turn
         if key == ord('w') and turn == WHITE_PIECE:
             if board[cursor_y][cursor_x] == EMPTY:
-                board[cursor_y][cursor_x] = WHITE_PIECE
+                place_piece(cursor_x, cursor_y, WHITE_PIECE)
                 last_player_move = (cursor_x, cursor_y)
                 winner = check_winner(board)
                 logging.debug(f'Player (White) placed at ({cursor_x}, {cursor_y}). Current board state:')
@@ -582,7 +582,7 @@ def main(stdscr: curses.window, game_mode: str):
         # Place a Black piece if it's Black's turn in PvP mode
         if game_mode == "pvp" and key == ord('b') and turn == BLACK_PIECE:
             if board[cursor_y][cursor_x] == EMPTY:
-                board[cursor_y][cursor_x] = BLACK_PIECE
+                place_piece(cursor_x, cursor_y, BLACK_PIECE)
                 last_player_move = (cursor_x, cursor_y)
                 winner = check_winner(board)
                 logging.debug(f'Player (Black) placed at ({cursor_x}, {cursor_y}). Current board state:')
