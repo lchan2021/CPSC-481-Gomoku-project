@@ -287,6 +287,17 @@ def evaluate_board(board: list[list[str]], player: str):
     score = 0  # Initialize the score to 0
     opponent = WHITE_PIECE if player == BLACK_PIECE else BLACK_PIECE
 
+    temp_hash = 0
+    piece = 0 if player == WHITE_PIECE else 1
+    opponent_piece = 1 if player == WHITE_PIECE else 0
+
+    for y in range(BOARD_SIZE):
+        for x in range(BOARD_SIZE):
+            if board[y][x] == player:
+                temp_hash ^= ZOBRIST_TABLE[y][x][piece]
+            elif board[y][x] == opponent:
+                temp_hash ^= ZOBRIST_TABLE[y][x][opponent_piece]
+
     # Iterate through all cells and evaluate patterns
     for y in range(BOARD_SIZE):
         for x in range(BOARD_SIZE):
@@ -309,6 +320,7 @@ def evaluate_board(board: list[list[str]], player: str):
                 if pattern_tuple in PATTERN_DICT:
                     score += PATTERN_DICT[pattern_tuple]
     logging.debug(f'Evaluate Board Score for player {player}: {score}')  # Log the evaluation score
+    trans_table[temp_hash] = score
     return score
 
 def evaluate_move_position(board: list[list[str]], x: int, y: int, player: str):
@@ -326,11 +338,9 @@ def evaluate_move_position(board: list[list[str]], x: int, y: int, player: str):
     Returns:
         score (int): The evaluated score of the move position.
     """
-    temp_hash = 0
+
     score = 0
     opponent = WHITE_PIECE if player == BLACK_PIECE else BLACK_PIECE
-    piece = 0 if player == WHITE_PIECE else 1
-    opponent_piece = 1 if player == WHITE_PIECE else 0
 
     for dx, dy in DIRECTIONS:
         for i in range(1, 5):  # Check four steps in each direction
@@ -338,15 +348,12 @@ def evaluate_move_position(board: list[list[str]], x: int, y: int, player: str):
             if 0 <= nx < BOARD_SIZE and 0 <= ny < BOARD_SIZE:
                 if board[ny][nx] == player:
                     score += 2  # Friendly piece found
-                    temp_hash ^= ZOBRIST_TABLE[ny][nx][piece]
                 elif board[ny][nx] == opponent:
                     score += 1  # Opponent's piece found
-                    temp_hash ^= ZOBRIST_TABLE[ny][nx][opponent_piece]
                 else:
                     break  # Empty space encountered
             else:
                 score -= 1  # Out of bounds
-    trans_table[temp_hash] = score
     return score
 
 def minimax(board: list[list[str]], depth: int, is_maximizing: bool, player: str,
