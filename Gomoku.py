@@ -293,19 +293,17 @@ def evaluate_move_position(board: list[list[str]], x: int, y: int, player: str):
     opponent = WHITE_PIECE if player == BLACK_PIECE else BLACK_PIECE
 
     for dx, dy in DIRECTIONS:
-        count = 0
-        for i in range(1, 3):  # Check two steps in each direction
+        for i in range(1, 5):  # Check four steps in each direction
             nx, ny = x + dx * i, y + dy * i
             if 0 <= nx < BOARD_SIZE and 0 <= ny < BOARD_SIZE:
                 if board[ny][nx] == player:
-                    count += 1  # Friendly piece found
+                    score += 2  # Friendly piece found
                 elif board[ny][nx] == opponent:
-                    count -= 1  # Opponent's piece found
+                    score += 1  # Opponent's piece found
                 else:
                     break  # Empty space encountered
             else:
-                count -= 1  # Out of bounds
-        score += count
+                score -= 1  # Out of bounds
     return score
 
 def minimax(board: list[list[str]], depth: int, is_maximizing: bool, player: str,
