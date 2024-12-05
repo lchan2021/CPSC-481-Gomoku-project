@@ -16,14 +16,14 @@ Install Python from python.org.
 Install the windows-curses library to enable curses support:
 ```
 pip install windows-curses
-python Gomoku_my version.py
+python Gomoku.py
 ```
 
 ### macOS and Linux
 
 Python and curses support are typically pre-installed on macOS and Linux systems.
 ```
-python3 Gomoku_my version.py
+python3 Gomoku.py
 ```
 
 ## How to Play
