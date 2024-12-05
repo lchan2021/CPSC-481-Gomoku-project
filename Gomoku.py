@@ -46,7 +46,7 @@ turn = WHITE_PIECE  # White player starts
 # Zobrist Hashing (if needed for further optimizations)
 # Table indexing is ZOBRIST_TABLE[y][x][p], where p = 0 for white and p = 1 for black
 ZOBRIST_TABLE = [[[random.getrandbits(64) for _ in range(2)] for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
-TRANS_TABLE = {}
+trans_table = {}
 board_hash = 0
 
 # Define Pattern Dictionary for AI Evaluation
@@ -345,7 +345,7 @@ def evaluate_move_position(board: list[list[str]], x: int, y: int, player: str):
                     break  # Empty space encountered
             else:
                 score -= 1  # Out of bounds
-    TRANS_TABLE[temp_hash] = score
+    trans_table[temp_hash] = score
     return score
 
 def minimax(board: list[list[str]], depth: int, is_maximizing: bool, player: str,
@@ -398,11 +398,11 @@ def minimax(board: list[list[str]], depth: int, is_maximizing: bool, player: str
         for move, _ in possible_moves:
             x, y = move
             place_piece(x, y, player)
-            if board_hash not in TRANS_TABLE:
+            if board_hash not in trans_table:
                 score = minimax(board, depth - 1, False, player, alpha, beta, start_time, (x, y))
-                TRANS_TABLE[board_hash] = score
+                trans_table[board_hash] = score
             else:
-                score = TRANS_TABLE[board_hash]
+                score = trans_table[board_hash]
             undo_piece(x, y)
             best_score = max(best_score, score)
             if best_score >= beta:
@@ -415,11 +415,11 @@ def minimax(board: list[list[str]], depth: int, is_maximizing: bool, player: str
         for move, _ in possible_moves:
             x, y = move
             place_piece(x, y, player)
-            if board_hash not in TRANS_TABLE:
+            if board_hash not in trans_table:
                 score = minimax(board, depth - 1, True, player, alpha, beta, start_time, (x, y))
-                TRANS_TABLE[board_hash] = score
+                trans_table[board_hash] = score
             else:
-                score = TRANS_TABLE[board_hash]
+                score = trans_table[board_hash]
             undo_piece(x, y)
             best_score = min(best_score, score)
             if best_score <= alpha:
@@ -470,12 +470,12 @@ def get_ai_move(board: list[list[str]], player: str, last_move: tuple):
 
         x, y = move
         place_piece(x, y, BLACK_PIECE)
-        if board_hash not in TRANS_TABLE:
+        if board_hash not in trans_table:
             score = minimax(board, depth=4, is_maximizing=False, player=player, alpha=alpha, beta=beta,
                        start_time=start_time, last_move=(x, y))
-            TRANS_TABLE[board_hash] = score
+            trans_table[board_hash] = score
         else:
-            score = TRANS_TABLE[board_hash]
+            score = trans_table[board_hash]
         undo_piece(x, y)
 
         logging.debug(f'AI evaluating move at ({x}, {y}) with score {score}')
