@@ -414,8 +414,8 @@ def get_ai_move(board: list[list[str]], player: str, last_move: tuple):
     for move, _ in possible_moves:
         if time.time() - start_time > TIME_LIMIT:
             if not best_move:
-                logging.debug("No best move chosen. Selecting random possible move")
-                return random.choice(possible_moves)[0]
+                logging.debug("No best move chosen. Selecting best move by heuristic")
+                return possible_moves[0][0]
             logging.debug("Time limit exceeded before completing all move evaluations.")
             break
 
