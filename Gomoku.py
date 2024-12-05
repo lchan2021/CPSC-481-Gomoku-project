@@ -217,13 +217,13 @@ def place_piece(x: int, y: int, player: str):
         x, y: Coordinates of the piece
         player: The player placing the piece ('W' or 'B')
 
-    Returns nothing
+    Returns None
 
     """
     global board_hash
 
-    board[y][x] = player
     piece = 0 if player == WHITE_PIECE else 1
+    board[y][x] = player
     board_hash ^= ZOBRIST_TABLE[y][x][piece]
     return
 
@@ -234,10 +234,11 @@ def undo_piece(x: int, y: int):
     Args:
         x, y: Coordinates of the piece
 
-    Returns nothing
+    Returns None
 
     """
     global board_hash
+
     piece = 0 if board[y][x] == WHITE_PIECE else 1
     board[y][x] = EMPTY
     board_hash ^= ZOBRIST_TABLE[y][x][piece]
