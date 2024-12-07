@@ -309,6 +309,10 @@ def evaluate_board(board: list[list[str]], player: str):
             elif board[y][x] == opponent:
                 temp_hash ^= ZOBRIST_TABLE[y][x][opponent_piece]
 
+    if temp_hash in trans_table:
+        logging.debug(f'Position already in transposition table, in evaluate_board')
+        return trans_table[temp_hash]
+
     # Iterate through all cells and evaluate patterns
     for y in range(BOARD_SIZE):
         for x in range(BOARD_SIZE):
@@ -423,6 +427,7 @@ def minimax(board: list[list[str]], depth: int, is_maximizing: bool, player: str
                 trans_table[board_hash] = score
             else:
                 score = trans_table[board_hash]
+                logging.debug(f'Position already in transposition table, in maximizing layer')
             undo_piece(x, y)
             best_score = max(best_score, score)
             if best_score >= beta:
@@ -440,6 +445,7 @@ def minimax(board: list[list[str]], depth: int, is_maximizing: bool, player: str
                 trans_table[board_hash] = score
             else:
                 score = trans_table[board_hash]
+                logging.debug(f'Position already in transposition table, in minimizing layer')
             undo_piece(x, y)
             best_score = min(best_score, score)
             if best_score <= alpha:
@@ -496,6 +502,7 @@ def get_ai_move(board: list[list[str]], player: str, last_move: tuple):
             trans_table[board_hash] = score
         else:
             score = trans_table[board_hash]
+            logging.debug(f'Position already in transposition table, in get_ai_move')
         undo_piece(x, y)
 
         logging.debug(f'AI evaluating move at ({x}, {y}) with score {score}')
