@@ -97,10 +97,21 @@ def create_pattern_dict():
         pattern_dict[(0, 0, x, x, 0)]       = 100 * x
     return pattern_dict
 
+def get_possible_pattern_lengths(pattern_dict: dict):
+    possible_lengths: set[int] = set()
+
+    for key in pattern_dict:
+        possible_lengths.add(len(key))
+
+    return possible_lengths
 
 
 # Generate the global pattern dictionary
 PATTERN_DICT = create_pattern_dict()
+
+POSSIBLE_PATTERN_LENGTHS = get_possible_pattern_lengths(PATTERN_DICT)
+
+MAX_PATTERN_LENGTH = max(POSSIBLE_PATTERN_LENGTHS)
 
 def print_banner():
     """
@@ -303,7 +314,7 @@ def evaluate_board(board: list[list[str]], player: str):
         for x in range(BOARD_SIZE):
             for dx, dy in DIRECTIONS:
                 pattern = []
-                for i in range(5):  # Only patterns of length 5 are considered
+                for i in range(MAX_PATTERN_LENGTH):
                     nx, ny = x + i * dx, y + i * dy
                     if 0 <= nx < BOARD_SIZE and 0 <= ny < BOARD_SIZE:
                         piece = board[ny][nx]
@@ -313,12 +324,13 @@ def evaluate_board(board: list[list[str]], player: str):
                             pattern.append(-1)
                         else:
                             pattern.append(0)
+                        if (i + 1) in POSSIBLE_PATTERN_LENGTHS: # If current length is in POSSIBLE_PATTERN_LENGTHS
+                            pattern_tuple = tuple(pattern)
+                            if pattern_tuple in PATTERN_DICT:
+                                score += PATTERN_DICT[pattern_tuple]
                     else:
                         pattern.append(-1)  # Out of bounds
                         break
-                pattern_tuple = tuple(pattern)
-                if pattern_tuple in PATTERN_DICT:
-                    score += PATTERN_DICT[pattern_tuple]
     logging.debug(f'Evaluate Board Score for player {player}: {score}')  # Log the evaluation score
     trans_table[temp_hash] = score
     return score
