@@ -439,7 +439,7 @@ def minimax(board: list[list[str]], depth: int, is_maximizing: bool, player: str
         best_score = math.inf
         for move, _ in possible_moves:
             x, y = move
-            place_piece(x, y, player)
+            place_piece(x, y, opponent)
             if board_hash not in trans_table:
                 score = minimax(board, depth - 1, True, player, alpha, beta, start_time, (x, y))
                 trans_table[board_hash] = score
