@@ -328,13 +328,13 @@ def evaluate_board(board: list[list[str]], player: str):
                             pattern.append(-1)
                         else:
                             pattern.append(0)
-                        if (i + 1) in POSSIBLE_PATTERN_LENGTHS: # If current length is in POSSIBLE_PATTERN_LENGTHS
-                            pattern_tuple = tuple(pattern)
-                            if pattern_tuple in PATTERN_DICT:
-                                score += PATTERN_DICT[pattern_tuple]
                     else:
                         pattern.append(-1)  # Out of bounds
                         break
+                    if (i + 1) in POSSIBLE_PATTERN_LENGTHS: # If current length is in POSSIBLE_PATTERN_LENGTHS
+                        pattern_tuple = tuple(pattern)
+                        if pattern_tuple in PATTERN_DICT:
+                            score += PATTERN_DICT[pattern_tuple]
     logging.debug(f'Evaluate Board Score for player {player}: {score}')  # Log the evaluation score
     trans_table[temp_hash] = score
     return score
@@ -557,6 +557,7 @@ def main(stdscr: curses.window, game_mode: str):
                     stdscr.getch()
                     break
                 turn = WHITE_PIECE  # Switch turn to White
+                trans_table = {} # Clear transposition table
                 print_board(stdscr)
                 continue  # Continue to next iteration
             else:
@@ -605,6 +606,7 @@ def main(stdscr: curses.window, game_mode: str):
                     stdscr.getch()
                     break
                 turn = BLACK_PIECE  # Switch turn to Black
+                trans_table = {} # Clear transposition table
 
         # Place a Black piece if it's Black's turn in PvP mode
         if game_mode == "pvp" and key == ord('b') and turn == BLACK_PIECE:
@@ -625,6 +627,7 @@ def main(stdscr: curses.window, game_mode: str):
                     stdscr.getch()
                     break
                 turn = WHITE_PIECE  # Switch turn to White
+                trans_table = {} # Clear transposition table
 
         # Refresh the board display after each action
         print_board(stdscr)
