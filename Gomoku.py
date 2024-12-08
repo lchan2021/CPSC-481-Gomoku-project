@@ -87,7 +87,7 @@ def create_pattern_dict():
         # Fully closed four-in-a-row (blocked on both ends)
         pattern_dict[(y, x, x, x, x, y)]    = -1000 * x
         # Open-ended three-in-a-row (potential to form four-in-a-row)
-        pattern_dict[(0, x, x, x, 0)]       = 1000 * x
+        pattern_dict[(0, x, x, x, 0)]       = 5000 * x
         pattern_dict[(y, x, x, x, 0)]       = 1000 * x
         pattern_dict[(0, x, x, x, y)]       = 1000 * x
         # One-and-Two
@@ -298,6 +298,7 @@ def evaluate_board(board: list[list[str]], player: str):
     score = 0  # Initialize the score to 0
     opponent = WHITE_PIECE if player == BLACK_PIECE else BLACK_PIECE
 
+    global trans_table
     temp_hash = 0
     piece = 0 if player == WHITE_PIECE else 1
     opponent_piece = 1 if player == WHITE_PIECE else 0
@@ -391,6 +392,8 @@ def minimax(board: list[list[str]], depth: int, is_maximizing: bool, player: str
         score (int): The evaluated score of the board.
     """
 
+    global trans_table
+
     if time.time() - start_time > TIME_LIMIT:
         logging.debug("Time limit exceeded during minimax search.")
         return evaluate_board(board, player)
@@ -467,6 +470,9 @@ def get_ai_move(board: list[list[str]], player: str, last_move: tuple):
     Returns:
         best_move (tuple): The coordinates (x, y) of the best move.
     """
+
+    global trans_table
+
     best_move = None
     best_score = -math.inf
     start_time = time.time()
@@ -557,7 +563,6 @@ def main(stdscr: curses.window, game_mode: str):
                     stdscr.getch()
                     break
                 turn = WHITE_PIECE  # Switch turn to White
-                trans_table = {} # Clear transposition table
                 print_board(stdscr)
                 continue  # Continue to next iteration
             else:
@@ -606,7 +611,6 @@ def main(stdscr: curses.window, game_mode: str):
                     stdscr.getch()
                     break
                 turn = BLACK_PIECE  # Switch turn to Black
-                trans_table = {} # Clear transposition table
 
         # Place a Black piece if it's Black's turn in PvP mode
         if game_mode == "pvp" and key == ord('b') and turn == BLACK_PIECE:
@@ -627,7 +631,6 @@ def main(stdscr: curses.window, game_mode: str):
                     stdscr.getch()
                     break
                 turn = WHITE_PIECE  # Switch turn to White
-                trans_table = {} # Clear transposition table
 
         # Refresh the board display after each action
         print_board(stdscr)
