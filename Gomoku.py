@@ -519,6 +519,8 @@ def get_ai_move(board: list[list[str]], player: str, last_move: tuple):
             alpha = max(alpha, best_score)  # Update alpha for pruning
 
     logging.info(f'AI selected move: {best_move} with score {best_score}')
+    logging.info(f'AI took {time.time() - start_time} seconds to select move')
+    
     return best_move
 
 def main(stdscr: curses.window, game_mode: str):
