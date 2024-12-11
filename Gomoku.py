@@ -47,8 +47,10 @@ cursor_x, cursor_y = BOARD_SIZE // 2, BOARD_SIZE // 2 # start in the middle
 turn = WHITE_PIECE  # White player starts
 
 # Zobrist Hashing (if needed for further optimizations)
+# Table indexing is ZOBRIST_TABLE[y][x][p], where p = 0 for white and p = 1 for black
 ZOBRIST_TABLE = [[[random.getrandbits(64) for _ in range(2)] for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
-TRANS_TABLE = {}
+trans_table = {}
+board_hash = 0
 
 # Define Pattern Dictionary for AI Evaluation
 def create_pattern_dict():
@@ -88,7 +90,7 @@ def create_pattern_dict():
         # Fully closed four-in-a-row (blocked on both ends)
         pattern_dict[(y, x, x, x, x, y)]    = -1000 * x
         # Open-ended three-in-a-row (potential to form four-in-a-row)
-        pattern_dict[(0, x, x, x, 0)]       = 1000 * x
+        pattern_dict[(0, x, x, x, 0)]       = 5000 * x
         pattern_dict[(y, x, x, x, 0)]       = 1000 * x
         pattern_dict[(0, x, x, x, y)]       = 1000 * x
         # One-and-Two
@@ -221,6 +223,41 @@ def print_board(stdscr: curses.window):
 
     stdscr.refresh()  # Refresh the screen to show all updates
 
+def place_piece(x: int, y: int, player: str):
+    """
+    Places a piece on the board and updates the hash value
+
+    Args:
+        x, y: Coordinates of the piece
+        player: The player placing the piece ('W' or 'B')
+
+    Returns None
+
+    """
+    global board_hash
+
+    piece = 0 if player == WHITE_PIECE else 1
+    board[y][x] = player
+    board_hash ^= ZOBRIST_TABLE[y][x][piece]
+    return
+
+def undo_piece(x: int, y: int):
+    """
+    Undoes a piece placement on the board and updates the hash value
+
+    Args:
+        x, y: Coordinates of the piece
+
+    Returns None
+
+    """
+    global board_hash
+
+    piece = 0 if board[y][x] == WHITE_PIECE else 1
+    board[y][x] = EMPTY
+    board_hash ^= ZOBRIST_TABLE[y][x][piece]
+    return
+
 def check_winner(board: list[list[str]]):
     """
     Checks the board for a winner by looking for five consecutive pieces.
@@ -264,6 +301,22 @@ def evaluate_board(board: list[list[str]], player: str):
     score = 0  # Initialize the score to 0
     opponent = WHITE_PIECE if player == BLACK_PIECE else BLACK_PIECE
 
+    global trans_table
+    temp_hash = 0
+    piece = 0 if player == WHITE_PIECE else 1
+    opponent_piece = 1 if player == WHITE_PIECE else 0
+
+    for y in range(BOARD_SIZE):
+        for x in range(BOARD_SIZE):
+            if board[y][x] == player:
+                temp_hash ^= ZOBRIST_TABLE[y][x][piece]
+            elif board[y][x] == opponent:
+                temp_hash ^= ZOBRIST_TABLE[y][x][opponent_piece]
+
+    if temp_hash in trans_table:
+        logging.debug(f'Position already in transposition table, in evaluate_board')
+        return trans_table[temp_hash]
+
     # Iterate through all cells and evaluate patterns
     for y in range(BOARD_SIZE):
         for x in range(BOARD_SIZE):
@@ -279,14 +332,15 @@ def evaluate_board(board: list[list[str]], player: str):
                             pattern.append(-1)
                         else:
                             pattern.append(0)
-                        if (i + 1) in POSSIBLE_PATTERN_LENGTHS: # If current length is in POSSIBLE_PATTERN_LENGTHS
-                            pattern_tuple = tuple(pattern)
-                            if pattern_tuple in PATTERN_DICT:
-                                score += PATTERN_DICT[pattern_tuple]
                     else:
                         pattern.append(-1)  # Out of bounds
                         break
+                    if (i + 1) in POSSIBLE_PATTERN_LENGTHS: # If current length is in POSSIBLE_PATTERN_LENGTHS
+                        pattern_tuple = tuple(pattern)
+                        if pattern_tuple in PATTERN_DICT:
+                            score += PATTERN_DICT[pattern_tuple]
     logging.debug(f'Evaluate Board Score for player {player}: {score}')  # Log the evaluation score
+    trans_table[temp_hash] = score
     return score
 
 def evaluate_move_position(board: list[list[str]], x: int, y: int, player: str):
@@ -304,6 +358,7 @@ def evaluate_move_position(board: list[list[str]], x: int, y: int, player: str):
     Returns:
         score (int): The evaluated score of the move position.
     """
+
     score = 0
     opponent = WHITE_PIECE if player == BLACK_PIECE else BLACK_PIECE
 
@@ -339,6 +394,9 @@ def minimax(board: list[list[str]], depth: int, is_maximizing: bool, player: str
     Returns:
         score (int): The evaluated score of the board.
     """
+
+    global trans_table
+
     if time.time() - start_time > TIME_LIMIT:
         logging.debug("Time limit exceeded during minimax search.")
         return evaluate_board(board, player)
@@ -369,9 +427,14 @@ def minimax(board: list[list[str]], depth: int, is_maximizing: bool, player: str
         best_score = -math.inf
         for move, _ in possible_moves:
             x, y = move
-            board[y][x] = player  # Make the move
-            score = minimax(board, depth - 1, False, player, alpha, beta, start_time, (x, y))
-            board[y][x] = EMPTY  # Undo the move
+            place_piece(x, y, player)
+            if board_hash not in trans_table:
+                score = minimax(board, depth - 1, False, player, alpha, beta, start_time, (x, y))
+                trans_table[board_hash] = score
+            else:
+                score = trans_table[board_hash]
+                logging.debug(f'Position already in transposition table, in maximizing layer')
+            undo_piece(x, y)
             best_score = max(best_score, score)
             if best_score >= beta:
                 logging.debug("Alpha-beta pruning activated in maximizing layer.")
@@ -382,9 +445,14 @@ def minimax(board: list[list[str]], depth: int, is_maximizing: bool, player: str
         best_score = math.inf
         for move, _ in possible_moves:
             x, y = move
-            board[y][x] = opponent  # Make the opponent's move
-            score = minimax(board, depth - 1, True, player, alpha, beta, start_time, (x, y))
-            board[y][x] = EMPTY  # Undo the move
+            place_piece(x, y, opponent)
+            if board_hash not in trans_table:
+                score = minimax(board, depth - 1, True, player, alpha, beta, start_time, (x, y))
+                trans_table[board_hash] = score
+            else:
+                score = trans_table[board_hash]
+                logging.debug(f'Position already in transposition table, in minimizing layer')
+            undo_piece(x, y)
             best_score = min(best_score, score)
             if best_score <= alpha:
                 logging.debug("Alpha-beta pruning activated in minimizing layer.")
@@ -405,6 +473,9 @@ def get_ai_move(board: list[list[str]], player: str, last_move: tuple):
     Returns:
         best_move (tuple): The coordinates (x, y) of the best move.
     """
+
+    global trans_table
+
     best_move = None
     best_score = -math.inf
     start_time = time.time()
@@ -433,10 +504,15 @@ def get_ai_move(board: list[list[str]], player: str, last_move: tuple):
             break
 
         x, y = move
-        board[y][x] = player  # Make the move
-        score = minimax(board, depth=DEPTH, is_maximizing=False, player=player, alpha=alpha, beta=beta,
+        place_piece(x, y, BLACK_PIECE)
+        if board_hash not in trans_table:
+            score = minimax(board, depth=DEPTH, is_maximizing=False, player=player, alpha=alpha, beta=beta,
                        start_time=start_time, last_move=(x, y))
-        board[y][x] = EMPTY  # Undo the move
+            trans_table[board_hash] = score
+        else:
+            score = trans_table[board_hash]
+            logging.debug(f'Position already in transposition table, in get_ai_move')
+        undo_piece(x, y)
 
         logging.debug(f'AI evaluating move at ({x}, {y}) with score {score}')
 
@@ -476,7 +552,7 @@ def main(stdscr: curses.window, game_mode: str):
             ai_move = get_ai_move(board, BLACK_PIECE, last_player_move)  # Get AI's move
             if ai_move:  # If the AI returned a valid move
                 x, y = ai_move
-                board[y][x] = BLACK_PIECE  # Place the Black piece on the board
+                place_piece(x, y, BLACK_PIECE)
                 last_player_move = (x, y)  # Update last_player_move
                 winner = check_winner(board)
                 logging.debug(f'AI placed at ({x}, {y}). Current board state:')
@@ -524,7 +600,7 @@ def main(stdscr: curses.window, game_mode: str):
         # Place a White piece if it's White's turn
         if key == ord('w') and turn == WHITE_PIECE:
             if board[cursor_y][cursor_x] == EMPTY:
-                board[cursor_y][cursor_x] = WHITE_PIECE
+                place_piece(cursor_x, cursor_y, WHITE_PIECE)
                 last_player_move = (cursor_x, cursor_y)
                 winner = check_winner(board)
                 logging.debug(f'Player (White) placed at ({cursor_x}, {cursor_y}). Current board state:')
@@ -544,7 +620,7 @@ def main(stdscr: curses.window, game_mode: str):
         # Place a Black piece if it's Black's turn in PvP mode
         if game_mode == "pvp" and key == ord('b') and turn == BLACK_PIECE:
             if board[cursor_y][cursor_x] == EMPTY:
-                board[cursor_y][cursor_x] = BLACK_PIECE
+                place_piece(cursor_x, cursor_y, BLACK_PIECE)
                 last_player_move = (cursor_x, cursor_y)
                 winner = check_winner(board)
                 logging.debug(f'Player (Black) placed at ({cursor_x}, {cursor_y}). Current board state:')
