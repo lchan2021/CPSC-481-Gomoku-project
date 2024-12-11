@@ -35,8 +35,11 @@ DIRECTIONS = [(1, 0), (0, 1), (1, 1), (-1, 1)]
 # Time limit for AI search in seconds
 TIME_LIMIT = 10
 
-# AI search radius
+# AI search radius for possible moves
 SEARCH_RADIUS = 2
+
+# AI search depth for minimax
+DEPTH = 4
 
 # Initialize an empty game board
 board = [[EMPTY for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
@@ -431,7 +434,7 @@ def get_ai_move(board: list[list[str]], player: str, last_move: tuple):
 
         x, y = move
         board[y][x] = player  # Make the move
-        score = minimax(board, depth=4, is_maximizing=False, player=player, alpha=alpha, beta=beta,
+        score = minimax(board, depth=DEPTH, is_maximizing=False, player=player, alpha=alpha, beta=beta,
                        start_time=start_time, last_move=(x, y))
         board[y][x] = EMPTY  # Undo the move
 
@@ -444,7 +447,7 @@ def get_ai_move(board: list[list[str]], player: str, last_move: tuple):
 
     logging.info(f'AI selected move: {best_move} with score {best_score}')
     logging.info(f'AI took {time.time() - start_time} seconds to select move')
-    
+
     return best_move
 
 def main(stdscr: curses.window, game_mode: str):
