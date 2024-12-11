@@ -23,6 +23,9 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
+# Uncomment the below line to disable logging
+# logging.disable()
+
 # Define board size and piece representations
 BOARD_SIZE = 15
 WHITE_PIECE = 'W'
@@ -555,9 +558,9 @@ def main(stdscr: curses.window, game_mode: str):
                 place_piece(x, y, BLACK_PIECE)
                 last_player_move = (x, y)  # Update last_player_move
                 winner = check_winner(board)
-                logging.debug(f'AI placed at ({x}, {y}). Current board state:')
+                logging.info(f'AI placed at ({x}, {y}). Current board state:')
                 for row in board:
-                    logging.debug(' '.join(row))
+                    logging.info(' '.join(row))
                 if winner == BLACK_PIECE:
                     print_board(stdscr)
                     try:
@@ -603,9 +606,9 @@ def main(stdscr: curses.window, game_mode: str):
                 place_piece(cursor_x, cursor_y, WHITE_PIECE)
                 last_player_move = (cursor_x, cursor_y)
                 winner = check_winner(board)
-                logging.debug(f'Player (White) placed at ({cursor_x}, {cursor_y}). Current board state:')
+                logging.info(f'Player (White) placed at ({cursor_x}, {cursor_y}). Current board state:')
                 for row in board:
-                    logging.debug(' '.join(row))
+                    logging.info(' '.join(row))
                 if winner == WHITE_PIECE:
                     print_board(stdscr)
                     try:
@@ -623,9 +626,9 @@ def main(stdscr: curses.window, game_mode: str):
                 place_piece(cursor_x, cursor_y, BLACK_PIECE)
                 last_player_move = (cursor_x, cursor_y)
                 winner = check_winner(board)
-                logging.debug(f'Player (Black) placed at ({cursor_x}, {cursor_y}). Current board state:')
+                logging.info(f'Player (Black) placed at ({cursor_x}, {cursor_y}). Current board state:')
                 for row in board:
-                    logging.debug(' '.join(row))
+                    logging.info(' '.join(row))
                 if winner == BLACK_PIECE:
                     print_board(stdscr)
                     try:
