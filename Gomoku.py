@@ -24,7 +24,7 @@ logging.basicConfig(
 )
 
 # Uncomment the below line to disable logging
-# logging.disable()
+# logging.disable("DEBUG")
 
 # Define board size and piece representations
 BOARD_SIZE = 15
