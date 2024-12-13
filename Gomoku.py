@@ -594,7 +594,7 @@ def main(stdscr: curses.window, game_mode: str):
                         pass  # Ignore if out of bounds
                     stdscr.refresh()
                     stdscr.getch()
-                    logging.info(f'Peak memory used by program was {tracemalloc.get_traced_memory()[1]}).')
+                    logging.info(f'Peak memory used by program was {tracemalloc.get_traced_memory()[1]/1000000:.2f} MB.')
                     tracemalloc.stop()
                     break
                 turn = WHITE_PIECE  # Switch turn to White
@@ -644,7 +644,7 @@ def main(stdscr: curses.window, game_mode: str):
                         pass  # Ignore if out of bounds
                     stdscr.refresh()
                     stdscr.getch()
-                    logging.info(f'Peak memory used by program was {tracemalloc.get_traced_memory()[1]}).')
+                    logging.info(f'Peak memory used by program was {tracemalloc.get_traced_memory()[1]/1000000:.2f} MB.')
                     tracemalloc.stop()
                     break
                 turn = BLACK_PIECE  # Switch turn to Black
@@ -666,7 +666,7 @@ def main(stdscr: curses.window, game_mode: str):
                         pass  # Ignore if out of bounds
                     stdscr.refresh()
                     stdscr.getch()
-                    logging.info(f'Peak memory used by program was {tracemalloc.get_traced_memory()[1]}).')
+                    logging.info(f'Peak memory used by program was {tracemalloc.get_traced_memory()[1]/1000000:.2f} MB.')
                     tracemalloc.stop()
                     break
                 turn = WHITE_PIECE  # Switch turn to White
