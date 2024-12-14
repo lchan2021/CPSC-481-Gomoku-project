@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import time  # Import time module for delay
 import sys
 import random
