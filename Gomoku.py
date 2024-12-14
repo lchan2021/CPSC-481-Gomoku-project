@@ -61,6 +61,7 @@ board_hash = 0
 # Metrics
 state_count = 0
 hash_use_count = 0
+move_count = 0
 
 # Define Pattern Dictionary for AI Evaluation
 def create_pattern_dict():
@@ -563,6 +564,7 @@ def main(stdscr: curses.window, game_mode: str):
         game_mode (str): The selected game mode ('pvp' or 'ai').
     """
     global cursor_x, cursor_y, turn
+    global move_count
     last_player_move = (7, 7)  # Initialize last_player_move to center
 
     # Setup curses settings
@@ -581,6 +583,7 @@ def main(stdscr: curses.window, game_mode: str):
             if ai_move:  # If the AI returned a valid move
                 x, y = ai_move
                 place_piece(x, y, BLACK_PIECE)
+                move_count += 1
                 last_player_move = (x, y)  # Update last_player_move
                 winner = check_winner(board)
                 logging.info(f'AI placed at ({x}, {y}). Current board state:')
@@ -595,6 +598,7 @@ def main(stdscr: curses.window, game_mode: str):
                     stdscr.refresh()
                     stdscr.getch()
                     logging.info(f'Peak memory used by program was {tracemalloc.get_traced_memory()[1]/1000000:.2f} MB.')
+                    logging.info(f'This game lasted {move_count} moves.')
                     tracemalloc.stop()
                     break
                 turn = WHITE_PIECE  # Switch turn to White
@@ -631,6 +635,7 @@ def main(stdscr: curses.window, game_mode: str):
         if key == ord('w') and turn == WHITE_PIECE:
             if board[cursor_y][cursor_x] == EMPTY:
                 place_piece(cursor_x, cursor_y, WHITE_PIECE)
+                move_count += 1
                 last_player_move = (cursor_x, cursor_y)
                 winner = check_winner(board)
                 logging.info(f'Player (White) placed at ({cursor_x}, {cursor_y}). Current board state:')
@@ -645,6 +650,7 @@ def main(stdscr: curses.window, game_mode: str):
                     stdscr.refresh()
                     stdscr.getch()
                     logging.info(f'Peak memory used by program was {tracemalloc.get_traced_memory()[1]/1000000:.2f} MB.')
+                    logging.info(f'This game lasted {move_count} moves.')
                     tracemalloc.stop()
                     break
                 turn = BLACK_PIECE  # Switch turn to Black
@@ -653,6 +659,7 @@ def main(stdscr: curses.window, game_mode: str):
         if game_mode == "pvp" and key == ord('b') and turn == BLACK_PIECE:
             if board[cursor_y][cursor_x] == EMPTY:
                 place_piece(cursor_x, cursor_y, BLACK_PIECE)
+                move_count += 1
                 last_player_move = (cursor_x, cursor_y)
                 winner = check_winner(board)
                 logging.info(f'Player (Black) placed at ({cursor_x}, {cursor_y}). Current board state:')
@@ -667,6 +674,7 @@ def main(stdscr: curses.window, game_mode: str):
                     stdscr.refresh()
                     stdscr.getch()
                     logging.info(f'Peak memory used by program was {tracemalloc.get_traced_memory()[1]/1000000:.2f} MB.')
+                    logging.info(f'This game lasted {move_count} moves.')
                     tracemalloc.stop()
                     break
                 turn = WHITE_PIECE  # Switch turn to White
