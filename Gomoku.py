@@ -4,6 +4,9 @@ import sys
 import random
 import logging
 import math
+import tracemalloc
+
+tracemalloc.start()
 
 if sys.platform == "win32":
     # If on Windows, check if windows-curses is installed (if it works, we import `curses` rather than importing `windows-curses`)
@@ -23,6 +26,9 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
+# Uncomment the below line to disable logging
+logging.disable("DEBUG")
+
 # Define board size and piece representations
 BOARD_SIZE = 15
 WHITE_PIECE = 'W'
@@ -35,8 +41,11 @@ DIRECTIONS = [(1, 0), (0, 1), (1, 1), (-1, 1)]
 # Time limit for AI search in seconds
 TIME_LIMIT = 10
 
-# AI search radius
+# AI search radius for possible moves
 SEARCH_RADIUS = 2
+
+# AI search depth for minimax
+DEPTH = 4
 
 # Initialize an empty game board
 board = [[EMPTY for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
@@ -48,6 +57,11 @@ turn = WHITE_PIECE  # White player starts
 ZOBRIST_TABLE = [[[random.getrandbits(64) for _ in range(2)] for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
 trans_table = {}
 board_hash = 0
+
+# Metrics
+state_count = 0
+hash_use_count = 0
+move_count = 0
 
 # Define Pattern Dictionary for AI Evaluation
 def create_pattern_dict():
@@ -183,7 +197,7 @@ def print_board(stdscr: curses.window):
         sys.exit(1)
 
     # Display game title and instructions
-    stdscr.addstr(0, 0, "Gomoku V0.11", curses.A_BOLD)
+    stdscr.addstr(0, 0, "Gomoku V1.00", curses.A_BOLD)
     stdscr.addstr(2, 0, "Use arrow keys to move. Press 'w' to place White, 'b' to place Black. 'q' to quit.")
 
     # Draw the board with cursor
@@ -295,6 +309,9 @@ def evaluate_board(board: list[list[str]], player: str):
     Returns:
         score (int): The evaluated score of the board.
     """
+    global state_count
+    global hash_use_count
+
     score = 0  # Initialize the score to 0
     opponent = WHITE_PIECE if player == BLACK_PIECE else BLACK_PIECE
 
@@ -312,6 +329,7 @@ def evaluate_board(board: list[list[str]], player: str):
 
     if temp_hash in trans_table:
         logging.debug(f'Position already in transposition table, in evaluate_board')
+        hash_use_count += 1
         return trans_table[temp_hash]
 
     # Iterate through all cells and evaluate patterns
@@ -338,6 +356,8 @@ def evaluate_board(board: list[list[str]], player: str):
                             score += PATTERN_DICT[pattern_tuple]
     logging.debug(f'Evaluate Board Score for player {player}: {score}')  # Log the evaluation score
     trans_table[temp_hash] = score
+    state_count += 1
+
     return score
 
 def evaluate_move_position(board: list[list[str]], x: int, y: int, player: str):
@@ -393,6 +413,8 @@ def minimax(board: list[list[str]], depth: int, is_maximizing: bool, player: str
     """
 
     global trans_table
+    global state_count
+    global hash_use_count
 
     if time.time() - start_time > TIME_LIMIT:
         logging.debug("Time limit exceeded during minimax search.")
@@ -428,8 +450,10 @@ def minimax(board: list[list[str]], depth: int, is_maximizing: bool, player: str
             if board_hash not in trans_table:
                 score = minimax(board, depth - 1, False, player, alpha, beta, start_time, (x, y))
                 trans_table[board_hash] = score
+                state_count += 1
             else:
                 score = trans_table[board_hash]
+                hash_use_count += 1
                 logging.debug(f'Position already in transposition table, in maximizing layer')
             undo_piece(x, y)
             best_score = max(best_score, score)
@@ -446,8 +470,10 @@ def minimax(board: list[list[str]], depth: int, is_maximizing: bool, player: str
             if board_hash not in trans_table:
                 score = minimax(board, depth - 1, True, player, alpha, beta, start_time, (x, y))
                 trans_table[board_hash] = score
+                state_count += 1
             else:
                 score = trans_table[board_hash]
+                hash_use_count += 1
                 logging.debug(f'Position already in transposition table, in minimizing layer')
             undo_piece(x, y)
             best_score = min(best_score, score)
@@ -472,6 +498,8 @@ def get_ai_move(board: list[list[str]], player: str, last_move: tuple):
     """
 
     global trans_table
+    global state_count
+    global hash_use_count
 
     best_move = None
     best_score = -math.inf
@@ -503,11 +531,13 @@ def get_ai_move(board: list[list[str]], player: str, last_move: tuple):
         x, y = move
         place_piece(x, y, BLACK_PIECE)
         if board_hash not in trans_table:
-            score = minimax(board, depth=4, is_maximizing=False, player=player, alpha=alpha, beta=beta,
+            score = minimax(board, depth=DEPTH, is_maximizing=False, player=player, alpha=alpha, beta=beta,
                        start_time=start_time, last_move=(x, y))
             trans_table[board_hash] = score
+            state_count += 1
         else:
             score = trans_table[board_hash]
+            hash_use_count += 1
             logging.debug(f'Position already in transposition table, in get_ai_move')
         undo_piece(x, y)
 
@@ -520,7 +550,9 @@ def get_ai_move(board: list[list[str]], player: str, last_move: tuple):
 
     logging.info(f'AI selected move: {best_move} with score {best_score}')
     logging.info(f'AI took {time.time() - start_time} seconds to select move')
-    
+    logging.info(f'AI has evaluated {state_count} states so far')
+    logging.info(f'AI has used the transposition table {hash_use_count} times so far')
+
     return best_move
 
 def main(stdscr: curses.window, game_mode: str):
@@ -532,6 +564,7 @@ def main(stdscr: curses.window, game_mode: str):
         game_mode (str): The selected game mode ('pvp' or 'ai').
     """
     global cursor_x, cursor_y, turn
+    global move_count
     last_player_move = (7, 7)  # Initialize last_player_move to center
 
     # Setup curses settings
@@ -550,11 +583,12 @@ def main(stdscr: curses.window, game_mode: str):
             if ai_move:  # If the AI returned a valid move
                 x, y = ai_move
                 place_piece(x, y, BLACK_PIECE)
+                move_count += 1
                 last_player_move = (x, y)  # Update last_player_move
                 winner = check_winner(board)
-                logging.debug(f'AI placed at ({x}, {y}). Current board state:')
+                logging.info(f'AI placed at ({x}, {y}). Current board state:')
                 for row in board:
-                    logging.debug(' '.join(row))
+                    logging.info(' '.join(row))
                 if winner == BLACK_PIECE:
                     print_board(stdscr)
                     try:
@@ -563,6 +597,9 @@ def main(stdscr: curses.window, game_mode: str):
                         pass  # Ignore if out of bounds
                     stdscr.refresh()
                     stdscr.getch()
+                    logging.info(f'Peak memory used by program was {tracemalloc.get_traced_memory()[1]/1000000:.2f} MB.')
+                    logging.info(f'This game lasted {move_count} moves.')
+                    tracemalloc.stop()
                     break
                 turn = WHITE_PIECE  # Switch turn to White
                 print_board(stdscr)
@@ -598,11 +635,12 @@ def main(stdscr: curses.window, game_mode: str):
         if key == ord('w') and turn == WHITE_PIECE:
             if board[cursor_y][cursor_x] == EMPTY:
                 place_piece(cursor_x, cursor_y, WHITE_PIECE)
+                move_count += 1
                 last_player_move = (cursor_x, cursor_y)
                 winner = check_winner(board)
-                logging.debug(f'Player (White) placed at ({cursor_x}, {cursor_y}). Current board state:')
+                logging.info(f'Player (White) placed at ({cursor_x}, {cursor_y}). Current board state:')
                 for row in board:
-                    logging.debug(' '.join(row))
+                    logging.info(' '.join(row))
                 if winner == WHITE_PIECE:
                     print_board(stdscr)
                     try:
@@ -611,6 +649,9 @@ def main(stdscr: curses.window, game_mode: str):
                         pass  # Ignore if out of bounds
                     stdscr.refresh()
                     stdscr.getch()
+                    logging.info(f'Peak memory used by program was {tracemalloc.get_traced_memory()[1]/1000000:.2f} MB.')
+                    logging.info(f'This game lasted {move_count} moves.')
+                    tracemalloc.stop()
                     break
                 turn = BLACK_PIECE  # Switch turn to Black
 
@@ -618,11 +659,12 @@ def main(stdscr: curses.window, game_mode: str):
         if game_mode == "pvp" and key == ord('b') and turn == BLACK_PIECE:
             if board[cursor_y][cursor_x] == EMPTY:
                 place_piece(cursor_x, cursor_y, BLACK_PIECE)
+                move_count += 1
                 last_player_move = (cursor_x, cursor_y)
                 winner = check_winner(board)
-                logging.debug(f'Player (Black) placed at ({cursor_x}, {cursor_y}). Current board state:')
+                logging.info(f'Player (Black) placed at ({cursor_x}, {cursor_y}). Current board state:')
                 for row in board:
-                    logging.debug(' '.join(row))
+                    logging.info(' '.join(row))
                 if winner == BLACK_PIECE:
                     print_board(stdscr)
                     try:
@@ -631,6 +673,9 @@ def main(stdscr: curses.window, game_mode: str):
                         pass  # Ignore if out of bounds
                     stdscr.refresh()
                     stdscr.getch()
+                    logging.info(f'Peak memory used by program was {tracemalloc.get_traced_memory()[1]/1000000:.2f} MB.')
+                    logging.info(f'This game lasted {move_count} moves.')
+                    tracemalloc.stop()
                     break
                 turn = WHITE_PIECE  # Switch turn to White
 
