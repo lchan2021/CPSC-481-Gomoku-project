@@ -197,7 +197,7 @@ def print_board(stdscr: curses.window):
         sys.exit(1)
 
     # Display game title and instructions
-    stdscr.addstr(0, 0, "Gomoku V0.11", curses.A_BOLD)
+    stdscr.addstr(0, 0, "Gomoku V1.00", curses.A_BOLD)
     stdscr.addstr(2, 0, "Use arrow keys to move. Press 'w' to place White, 'b' to place Black. 'q' to quit.")
 
     # Draw the board with cursor
